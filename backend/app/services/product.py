@@ -43,6 +43,16 @@ class ProductService:
         entry["status"] = STATUS_ORDER[0]
         entry["pending"] = True
         entry["abnormal"] = False
+        # 发布准入默认关闭，等认证审核通过后由认证服务回写。
+        entry["发布准入"] = "未准入"
+        entry["准入状态"] = "未准入"
+        entry["准入认证编号"] = ""
+        entry["准入认证标准"] = ""
+        entry["准入有效期至"] = ""
+        entry["准入认证"] = None
+        for optional in ("负责人", "所属单位", "归属单位", "产品名称"):
+            if values.get(optional) not in (None, ""):
+                entry[optional] = values.get(optional)
         rows.append(entry)
         return entry, []
 

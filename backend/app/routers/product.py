@@ -6,11 +6,13 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from app.schemas import ActionResult, EntryPayload, PageResult
+from app.services.badge import BadgeService
 from app.services.product import ProductService
 
 router = APIRouter(prefix="/api/product", tags=["数据产品定义"])
 
 service = ProductService()
+badge_service = BadgeService()
 
 LIST_FIELDS = ["产品编号", "产品名称", "产品类型", "数据来源", "计算逻辑", "输出格式", "负责人", "产品状态"]
 STATUSES = ["草稿", "开发中", "已发布", "已下线"]
@@ -28,6 +30,15 @@ def list_entries(
         raise HTTPException(status_code=400, detail="每页最多 200 条，请缩小分页范围")
     items, total = service.list_entries(keyword=keyword, status=status, page=page, size=size)
     return PageResult(items=items, total=total, page=page, size=size)
+
+
+@router.get("/admission", response_model=dict)
+def get_admission(product_no: str = Query(description="产品编号")) -> dict:
+    """读取产品发布准入：只认审核通过且仍在有效期内的认证，驳回或过期后立即读不到。"""
+    product = badge_service.product_by_number(product_no.strip())
+    if product is None:
+        raise HTTPException(status_code=404, detail=f"产品 {product_no} 不存在或已归档")
+    return badge_service.admission_for_product(product)
 
 
 @router.get("/{entry_id}", response_model=dict)
